@@ -1,0 +1,9 @@
+**/*.tsbuildinfo
+**/dist
+*.tsbuildinfo
+.yarn/cache
+.rollup.cache
+.parcel-cache
+dist
+node_modules
+.env
