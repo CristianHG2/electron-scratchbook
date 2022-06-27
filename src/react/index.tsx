@@ -1,18 +1,18 @@
-import React from 'react';
-import {ChakraProvider, extendTheme, Box, Heading} from '@chakra-ui/react';
-import Dashboard from './views/Dashboard';
-import {createRoot} from 'react-dom/client';
-import NewtonProvider from './components/newton/NewtonProvider';
+import React from "react";
+import { ChakraProvider, extendTheme, Box, Heading } from "@chakra-ui/react";
+import Dashboard from "./views/Dashboard";
+import { createRoot } from "react-dom/client";
 // @ts-ignore
-import * as views from './views/**/*.tsx';
+import * as views from "./views/**/*.tsx";
+import NewtonProvider from "./components/newton-react/NewtonProvider";
 
 const theme = extendTheme({
   styles: {
     global: {
       body: {
-        color: 'gray.700'
-      }
-    }
+        color: "gray.700",
+      },
+    },
   },
 
   fonts: {
@@ -24,20 +24,20 @@ const theme = extendTheme({
     Heading: {
       variant: {
         primary: {
-          fontWeight: 'semibold',
-          bgColor: 'gray.700',
-          color: 'white',
+          fontWeight: "semibold",
+          bgColor: "gray.700",
+          color: "white",
           p: 6,
-          rounded: 'md'
+          rounded: "md",
         },
       },
       sizes: {
         md: {
-          fontWeight: 500
-        }
-      }
-    }
-  }
+          fontWeight: 500,
+        },
+      },
+    },
+  },
 });
 
 const Error404 = () => (
@@ -47,18 +47,15 @@ const Error404 = () => (
 );
 
 const onComponentRequest = (component: string) => {
-  const view = component.split('/')
-    .reduce((acc, chunk) => acc[chunk], views).default;
+  const { index, ...view } = component
+    .split("/")
+    .reduce((acc, chunk) => acc[chunk], views);
 
-  return view ?? Error404;
+  return (index ?? view).default ?? Error404;
 };
 
-createRoot(document.getElementById('app') ?? document.body)
-  .render((
-    <ChakraProvider theme={theme}>
-      <NewtonProvider
-        resolver={onComponentRequest}
-        home={'Dashboard'}
-      />
-    </ChakraProvider>
-  ));
+createRoot(document.getElementById("app") ?? document.body).render(
+  <ChakraProvider theme={theme}>
+    <NewtonProvider resolver={onComponentRequest} home={"Dashboard"} />
+  </ChakraProvider>
+);

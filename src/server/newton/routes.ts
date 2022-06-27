@@ -1,14 +1,22 @@
-import { action } from "../lib/newton";
-import getIssues from "../lib/zenhub/requests/get-issues";
-import transform from "../lib/zenhub/transform";
+import { Routes } from "../../types/newton";
+import client from "../zenhub/client";
+import { SprintIssueResponse, UserListResponse } from "../../types/zenhub";
+import { ray } from "node-ray";
 
-export default [
-  action("Dashboard", async () => {
-    const users = transform(await getIssues());
+const routes: Routes = {
+  Dashboard: async () => {
+    const issues = (await client.gql<SprintIssueResponse>("issues")).workspace
+      .upcomingSprint.issues.nodes;
 
-    return {
-      assignees: users.perAssignee(),
-      issues: users.issues(),
-    };
-  }),
-];
+    const users = (
+      await client.gql<UserListResponse>("users")
+    ).workspace.assignees.nodes.reduce<string[]>(
+      (acc, user) => [...acc, user.login],
+      []
+    );
+
+    return { users, issues };
+  },
+};
+
+export default routes;

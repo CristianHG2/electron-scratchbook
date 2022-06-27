@@ -1,13 +1,12 @@
-export type Route<T = any, R = any>  = {
-  view: string;
-  action: (payload?: T) => (R | Promise<R>);
-}
+import { resolve } from "path";
 
-export const action = <
-  Action extends (...args: any) => any,
-  Payload = Parameters<Action>,
-  Response = ReturnType<Action>,
->(
-  view: string,
-  action: Action
-): Route<Payload, Response> => ({view, action});
+const cwd = resolve(process.cwd(), "src/server/newton");
+
+export const executeRoute = async (view: string) => {
+  const directory = view.split("/");
+  const target = directory.pop() ?? view;
+
+  const routes = (await import(`./routes`)).default;
+
+  return routes[target] ?? (() => ({ __newton_error: true }));
+};

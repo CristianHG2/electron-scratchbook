@@ -1,43 +1,37 @@
-import React, { useState } from "react";
-import { Box, Divider, Flex, Heading, HStack, VStack } from "@chakra-ui/react";
-import { IssueNode } from "../../types/zenhub";
-import AssigneeBtn from "../components/AssigneeBtn";
+import React, { Fragment, useEffect } from "react";
+import { Box, Divider, Flex, Heading, HStack } from "@chakra-ui/react";
+import ZenHubIssue from "./ZenHubIssue";
+import DistributionChart from "./DistributionChart";
+import { DashboardComponentProps } from "src/types/dashboard";
+import useTransformers from "./hooks/useTransformers";
+import useDashboardStore from "./hooks/useDashboardStore";
 
-export default ({ assignees }: { assignees: Record<string, IssueNode[]> }) => {
-  const [openAssignee, setOpenAssignee] = useState<string | null>(null);
-  const names = Object.keys(assignees);
-  const issues = openAssignee ? assignees[openAssignee] : [];
+export default (props: DashboardComponentProps) => {
+  const { issues, setIssues, setUsers } = useDashboardStore();
+  const { getChartData } = useTransformers();
 
-  const onAssigneeSelect = (assignee: string) => {
-    console.log(assignee);
-    setOpenAssignee(assignee);
-  };
+  useEffect(() => {
+    setIssues(props.issues);
+    setUsers(props.users);
+  }, [props.issues, props.users]);
+
+  const chartData = getChartData(issues);
 
   return (
-    <Box maxW="5xl" p={8} m="auto" mt={12}>
-      <Heading variant="primary">Sprint Assignments</Heading>
+    <Box maxW="7xl" p={8} m="auto" mt={12}>
+      <Heading variant="primary">Workload Dashboard</Heading>
       <Divider my={6} />
 
-      <HStack spacing={10}>
-        <Box>
-          <VStack spacing={4} w="2xs">
-            {names.map((name) => (
-              <AssigneeBtn
-                key={name}
-                name={name}
-                onClick={() => onAssigneeSelect(name)}
-              />
-            ))}
-          </VStack>
-        </Box>
-        <Flex grow={1}>
-          {!openAssignee ? (
-            <Heading size="md" textAlign="center" w="100%">
-              Please select an assignee.
-            </Heading>
-          ) : (
-            <Box>{JSON.stringify(issues)}</Box>
-          )}
+      <HStack spacing={4}>
+        <Flex grow={1} justify="center" align="middle">
+          <DistributionChart chartData={chartData} />
+        </Flex>
+        <Flex maxW="md" flexDir="column" maxH="md" overflow="auto">
+          {issues.map((issue) => (
+            <Fragment key={issue.title}>
+              <ZenHubIssue issue={issue} />
+            </Fragment>
+          ))}
         </Flex>
       </HStack>
     </Box>

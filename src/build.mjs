@@ -37,6 +37,6 @@ if (!fs.existsSync(`dist/index.html`)) {
 }
 
 run('parcel watch src/react/index.tsx --dist-dir dist/react-app');
-run('tsc --watch');
+run('tsc -p tsconfig.electron.json --watch');
 openElectronOnBuild();
 

@@ -1,11 +1,15 @@
-import {app, BrowserWindow, ipcMain} from 'electron';
-import electronReload from 'electron-reload';
-import {addCspToFile, generateCsp} from './server/lib/csp';
-import {Route} from './server/lib/newton';
+import { app, BrowserWindow, ipcMain } from "electron";
+import electronReload from "electron-reload";
+import { addCspToFile, generateCsp } from "./server/support/csp";
+import dotenv from "dotenv";
+import { executeRoute } from "./server/newton";
+import { ray } from "node-ray";
 
-electronReload('server/**/*.js,index.html,main.js,preload.js', {
-  electron:`node_modules/electron/dist/Electron.app/Contents/MacOS/Electron`,
-  electronArgv: ['--inspect=5858'],
+dotenv.config();
+
+electronReload("server/**/*.js,index.html,main.js,preload.js", {
+  electron: `node_modules/electron/dist/Electron.app/Contents/MacOS/Electron`,
+  electronArgv: ["--inspect=5858"],
 });
 
 const createWindow = () =>
@@ -13,39 +17,54 @@ const createWindow = () =>
     width: 800,
     height: 600,
     webPreferences: {
-      preload: `${__dirname}/preload.js`
-    }
-  })
+      preload: `${__dirname}/server/support/preload.js`,
+    },
+  });
 
 const scaffoldThread = async () => {
   addCspToFile(`${__dirname}/index.html`, generateCsp());
 
-  const win = (await createWindow());
+  const win = await createWindow();
   await win.loadFile(`${__dirname}/index.html`);
   win.webContents.openDevTools();
 };
 
-const executeRoute = async (view: string) => {
-  const directory = view.split('/');
-  const target = directory.pop() ?? view;
-
-  const routes: Route[] = (await import(`./server/routes/${(directory ?? []).join('/')}/index`)).default;
-  return routes.find(route => route.view === target)?.action ?? (() => ({__newton_error: true}));
-};
-
 app.whenReady().then(async () => {
-  ipcMain.handle('newton:navigate', async (event, view) =>
+  ipcMain.handle("newton:navigate", async (event, view) =>
     (await executeRoute(view))()
   );
 
   /* Runtime */
 
   await scaffoldThread();
-  app.on('activate', () => {
-    !BrowserWindow.getAllWindows().length && createWindow()
+  app.on("activate", () => {
+    !BrowserWindow.getAllWindows().length && createWindow();
   });
 });
 
-app.on('window-all-closed', () => {
-  process.platform !== 'darwin' && app.quit()
+app.on("window-all-closed", () => {
+  process.platform !== "darwin" && app.quit();
 });
+
+/* HMR */
+
+if (process.env.NODE_ENV !== "production") {
+  const target = `${process.cwd()}/dist/server`;
+  const chokidar = require("chokidar");
+  const watcher = chokidar.watch(`${target}/**/*.js`);
+
+  ray(`Watching in ${target}`);
+
+  watcher.on("ready", () => {
+    watcher.on("all", () => {
+      ray(`Changes detected, reloading...`);
+
+      const matches = Object.keys(require.cache).filter((id) =>
+        id.includes(target)
+      );
+      matches.forEach((id) => delete require.cache[id]);
+
+      ray(`Cleared ${matches.length} modules`);
+    });
+  });
+}

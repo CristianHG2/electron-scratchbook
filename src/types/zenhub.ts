@@ -5,19 +5,31 @@ export type Assignee = {
 export type IssueNode = {
   title: string;
   assignees: {
-    nodes: Assignee[]
+    nodes: Assignee[];
   };
   estimate?: {
-    value: number
+    value: number;
   };
 };
 
-export type Response = {
-  workspace: {
-    upcomingSprint: {
-      issues: {
-        nodes: IssueNode[];
-      }
-    }
-  }
+export type Workspace<T> = {
+  workspace: T;
+};
+
+export type SprintIssueResponse = Workspace<{
+  upcomingSprint: {
+    issues: {
+      nodes: IssueNode[];
+    };
+  };
+}>;
+
+export type UserListResponse = Workspace<{
+  assignees: {
+    nodes: { login: string }[];
+  };
+}>;
+
+export type Client = {
+  gql: <T>(file: string) => Promise<T>;
 };
